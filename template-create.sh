@@ -21,8 +21,15 @@ qm create $templateId --name $templateName --cores $cpus --memory $memory --cpu 
 # Adding EFI drive required for UEFI boot support
 qm set $templateId --efidisk0 $storagePoolName:0
 # Adding cloud-init drive and ssh-key because cloud-init
+if ! [[ -f authorizedKey.pub ]]; then
+    if [[ -z $sshKey ]]; then
+        ssh-keygen -q -t ed25519 -N '' -f authorizedKey #>/dev/null 2>&1
+    else
+        echo $sshKey > authorizedKey.pub
+    fi
+fi
 qm set $templateId --ide2 $storagePoolName:cloudinit
-qm set $templateId --sshkey ~/.ssh/authorized_keys
+qm set $templateId --sshkey authorizedKey.pub
 # Image import
 qm importdisk $templateId $imageName $storagePoolName
 # Boot drive set to VIRTIO SCSI Single (supposedly optimum nowadays) with writeback cache and guaranteed io thread
